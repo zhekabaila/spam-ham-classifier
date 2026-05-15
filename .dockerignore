@@ -1,0 +1,13 @@
+venv
+.git
+.gitignore
+__pycache__
+.streamlit
+*.pyc
+*.pyo
+*.pyd
+.db
+.DS_Store
+notebooks
+data/dataset.csv
+models/confusion_matrix.png

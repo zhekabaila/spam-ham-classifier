@@ -6,3 +6,5 @@ seaborn
 nltk
 joblib
 jupyter
+streamlit
+plotly

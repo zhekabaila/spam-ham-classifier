@@ -44,8 +44,8 @@ MANIFEST
 # Models and Data
 data/*.csv
 !data/.gitkeep
-models/*.pkl
-models/*.json
+# models/*.pkl
+# models/*.json
 models/*.png
 
 # Environment variables
