@@ -19,7 +19,7 @@ Jalankan perintah berikut di direktori project:
 
 ```bash
 # Build dan jalankan kontainer di background
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 Aplikasi akan berjalan di port `8501`.
