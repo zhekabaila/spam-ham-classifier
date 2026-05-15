@@ -25,7 +25,7 @@ docker compose up -d --build
 Aplikasi akan berjalan di port `8501`.
 
 ## 4. Konfigurasi Nginx (Reverse Proxy)
-Buat file konfigurasi Nginx baru (misal: `/etc/nginx/sites-available/spam-classifier`):
+Buat file konfigurasi Nginx baru (misal: `/etc/nginx/sites-available/spam-ham-classifier`):
 
 ```nginx
 server {
@@ -50,7 +50,7 @@ server {
 
 Setelah itu, aktifkan konfigurasi dan restart Nginx:
 ```bash
-sudo ln -s /etc/nginx/sites-available/spam-classifier /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/spam-ham-classifier /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
