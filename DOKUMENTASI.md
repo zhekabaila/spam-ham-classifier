@@ -20,7 +20,8 @@
 9. [Model Machine Learning](#model-machine-learning)
 10. [Proses & Tahapan](#proses--tahapan)
 11. [Cara Kerja Project](#cara-kerja-project)
-12. [Panduan Penggunaan](#panduan-penggunaan)
+12. [Streamlit Web Application](#streamlit-web-application)
+13. [Panduan Penggunaan](#panduan-penggunaan)
 
 ---
 
@@ -2101,6 +2102,656 @@ Key Information Passed Through Pipeline:
    - Which stopwords to remove
    - Applied consistently to train & test & new messages
 ```
+
+---
+
+## 🌐 Streamlit Web Application
+
+### Pengenalan Streamlit
+
+**Streamlit** adalah framework Python untuk membuat web applications dengan cepat dan mudah, tanpa perlu menulis HTML/CSS/JavaScript. Cocok untuk:
+
+- Data science dashboards
+- Machine learning demos
+- Interactive visualizations
+- Rapid prototyping
+
+**Keuntungan Streamlit**:
+
+- ✅ Simple syntax (cukup Python saja)
+- ✅ Hot reload (auto-refresh saat code berubah)
+- ✅ Built-in components (buttons, sliders, charts, dll)
+- ✅ Mobile responsive
+- ✅ Easy to deploy (Streamlit Cloud, Heroku, Docker)
+
+### File: `app.py`
+
+**Tujuan**: Provide interactive web UI untuk spam/ham prediction
+
+**Fitur Utama**:
+
+1. Single message prediction dengan visualisasi
+2. Batch prediction (multiple messages sekaligus)
+3. Beautiful dark theme UI
+4. Real-time results dengan probability charts
+5. Example buttons untuk quick testing
+6. Sidebar dengan informasi & dokumentasi
+
+### Struktur `app.py`
+
+```
+app.py
+│
+├─ IMPORTS & SETUP
+│  ├─ import streamlit as st
+│  ├─ import pandas, numpy, plotly
+│  ├─ import re, string (preprocessing)
+│  └─ Config: page_config, CSS styling
+│
+├─ CUSTOM CSS STYLING
+│  ├─ Dark theme (navy, blues, reds, greens)
+│  ├─ Typography (Syne font untuk headlines, DM Sans untuk body)
+│  ├─ Components styling (buttons, cards, badges)
+│  └─ Responsive design
+│
+├─ HELPER FUNCTIONS
+│  ├─ clean_text()
+│  ├─ remove_stopwords()
+│  ├─ preprocess()
+│  ├─ load_model() - @cache untuk efficiency
+│  ├─ predict() - wrapper untuk model prediction
+│  ├─ gauge_chart() - Plotly gauge visualization
+│  └─ prob_bar() - Plotly bar chart untuk probabilities
+│
+├─ SIDEBAR
+│  ├─ Model info & performance metrics
+│  ├─ Feature explanation
+│  ├─ How model works explanation
+│  └─ Footer dengan attribution
+│
+├─ MAIN LAYOUT
+│  ├─ Hero section (title, subtitle, badge)
+│  ├─ Single message input area
+│  │  ├─ Textarea untuk input
+│  │  ├─ Example buttons (spam, ham)
+│  │  └─ Check button
+│  ├─ Results section (if prediction made)
+│  │  ├─ Prediction label dengan emoji
+│  │  ├─ Gauge chart (spam probability)
+│  │  ├─ Probability bar chart
+│  │  └─ Processed message display
+│  ├─ Batch prediction section
+│  │  ├─ Multi-line textarea
+│  │  ├─ Analyze button
+│  │  └─ Results table
+│  └─ Footer
+│
+└─ SESSION STATE MANAGEMENT
+   ├─ input_text - untuk remember user input
+   └─ Persistent state across reruns
+```
+
+### Penjelasan Komponen Utama
+
+#### 1. Page Configuration
+
+```python
+st.set_page_config(
+    page_title="SpamShield · Detektor Spam",
+    page_icon="🛡️",
+    layout="centered",
+    initial_sidebar_state="expanded",
+)
+```
+
+**Penjelasan**:
+
+- `page_title`: Judul browser tab
+- `page_icon`: Emoji di browser tab
+- `layout="centered"`: Content centered dengan max width
+- `initial_sidebar_state="expanded"`: Sidebar terbuka di awal
+
+#### 2. Custom CSS Styling
+
+File `app.py` menggunakan **950+ lines CSS** untuk styling custom:
+
+**Color Scheme**:
+
+```css
+--bg: #0d0f14 (Very dark navy - background) --surface: #161920
+  (Dark surface - cards, sidebar) --card: #1c2030 (Card background)
+  --border: #252a3a (Subtle border color) --accent: #4f6ef7
+  (Primary accent - blue) --green: #22d3a0 (Success color) --red: #f75467
+  (Danger color) --yellow: #f7c054 (Warning color) --text: #e8eaf2
+  (Main text color) --muted: #7a80a0 (Secondary text);
+```
+
+**Typography**:
+
+- **Headlines**: Syne font (bold, modern)
+- **Body**: DM Sans font (clean, readable)
+
+**Key Styling Features**:
+
+- Hero title dengan gradient effect
+- Badges dengan warna accent
+- Cards dengan subtle borders
+- Buttons dengan hover effects
+- Smooth transitions & transforms
+- Responsive scrollbars
+- Custom focus states
+
+**Dark Theme Benefits**:
+
+- 👁️ Comfortable untuk mata (less strain)
+- 🎨 Modern aesthetic
+- 🔋 Battery efficient (untuk OLED screens)
+- ✨ Highlight predictions better
+
+#### 3. Preprocessing Functions
+
+**Note**: Fungsi ini adalah copy dari `src/preprocessor.py` (embedded dalam app.py untuk standalone app)
+
+```python
+def clean_text(text: str) -> str:
+    """Remove URLs, numbers, punctuation, normalize spaces"""
+    text = str(text).lower()
+    text = re.sub(r'http\S+|www\S+', '', text)  # URLs
+    text = re.sub(r'\d+', '', text)              # Numbers
+    text = text.translate(str.maketrans('', '', string.punctuation))  # Punctuation
+    text = re.sub(r'\s+', ' ', text).strip()     # Normalize spaces
+    return text
+
+def remove_stopwords(text: str, language: str = 'indonesian') -> str:
+    """Remove common words (stopwords)"""
+    try:
+        stop_words = set(stopwords.words(language))
+    except OSError:
+        stop_words = set(stopwords.words('english'))
+    return ' '.join(w for w in text.split() if w not in stop_words)
+
+def preprocess(text: str) -> str:
+    """Full preprocessing pipeline"""
+    return remove_stopwords(clean_text(text))
+```
+
+#### 4. Model Loading dengan Caching
+
+```python
+@st.cache_resource
+def load_model(path: str):
+    """Load model once and cache for reuse"""
+    return joblib.load(path)
+```
+
+**Penjelasan `@st.cache_resource`**:
+
+- Streamlit reruns script dari atas setiap kali ada input
+- Caching prevents reloading model setiap kali
+- `@st.cache_resource`: Cache untuk "resources" (files, models)
+- Significantly speeds up app
+
+#### 5. Prediction Wrapper
+
+```python
+def predict(model, text: str) -> dict:
+    """Wrapper around model.predict()"""
+    processed = preprocess(text)
+    pred = model.predict([processed])[0]
+    proba = model.predict_proba([processed])[0]
+    classes = model.classes_
+    proba_dict = {c: round(float(p) * 100, 2) for c, p in zip(classes, proba)}
+    return {
+        "prediksi": pred,
+        "keyakinan": proba_dict[pred],
+        "probabilitas": proba_dict,
+        "processed": processed,
+    }
+```
+
+**Return Structure**:
+
+- `prediksi`: "spam" atau "ham"
+- `keyakinan`: Confidence percentage (0-100)
+- `probabilitas`: Dict dengan probability untuk setiap class
+- `processed`: Cleaned & preprocessed text
+
+#### 6. Visualizations
+
+##### Gauge Chart
+
+```python
+def gauge_chart(spam_pct: float):
+    """Plotly gauge showing spam probability"""
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=spam_pct,
+        gauge={
+            "axis": {"range": [0, 100]},
+            "bar": {"color": color, "thickness": 0.28},
+            "steps": [
+                {"range": [0, 40],   "color": "rgba(34,211,160,.08)"},   # Green zone
+                {"range": [40, 60],  "color": "rgba(247,192,84,.08)"},   # Yellow zone
+                {"range": [60, 100], "color": "rgba(247,84,103,.08)"},   # Red zone
+            ],
+        },
+        title={"text": "Skor Spam"},
+    ))
+    return fig
+```
+
+**Fitur**:
+
+- Needle menunjuk ke spam percentage
+- Zones: Green (0-40%, likely ham) → Yellow (40-60%, borderline) → Red (60-100%, likely spam)
+- Number display dengan color sesuai prediction
+- Height 200px untuk optimal display
+
+**Warna Dinamis**:
+
+- Jika spam_pct >= 50 → Red (#f75467)
+- Jika spam_pct < 50 → Green (#22d3a0)
+
+##### Probability Bar Chart
+
+```python
+def prob_bar(proba_dict: dict):
+    """Plotly bar chart showing spam vs ham probability"""
+    fig = go.Figure(go.Bar(
+        x=labels,
+        y=values,
+        marker_color=colors,  # Green untuk ham, Red untuk spam
+        text=[f"{v:.1f}%" for v in values],
+        textposition="outside",
+    ))
+    return fig
+```
+
+**Fitur**:
+
+- Horizontal bar untuk setiap class
+- Percentage labels di atas bar
+- Color-coded (green=ham, red=spam)
+- Range 0-110% untuk margin
+
+#### 7. Sidebar Information
+
+**Model Info**:
+
+```
+┌────────────────────────────────┐
+│ 🤖 Tentang Model               │
+├────────────────────────────────┤
+│ Algorithm: Linear SVM          │
+│ Features: 10,000 TF-IDF        │
+│ Accuracy: 95.68%               │
+│ Precision: 94%                 │
+│ Recall: 96%                    │
+└────────────────────────────────┘
+```
+
+**Features Explained**:
+
+- Input → Preprocess → TF-IDF → Predict
+
+**How Model Works**:
+Step-by-step explanation dengan examples
+
+### Layout Structure
+
+```
+┌─ HEADER ─────────────────────────────────────────┐
+│  🛡️ SpamShield                                   │
+│  Klasifikasi pesan spam & ham secara instan      │
+└──────────────────────────────────────────────────┘
+
+┌─ INPUT SECTION ──────────────────────────────────┐
+│  ✏️ Masukkan pesan yang ingin dicek              │
+│  [Example: Spam] [Example: Ham]                  │
+│                                                  │
+│  ┌──────────────────────────────────────────┐   │
+│  │ Textarea untuk input pesan               │   │
+│  │ ...                                      │   │
+│  └──────────────────────────────────────────┘   │
+│  [Cek Pesan] [Bersihkan]                        │
+└──────────────────────────────────────────────────┘
+
+┌─ RESULTS SECTION ────────────────────────────────┐
+│  (Muncul setelah klik "Cek Pesan")              │
+│                                                  │
+│  Hasil Klasifikasi:                             │
+│  ┌─ SPAM (atau HAM) ─────────────────────┐     │
+│  │ 🚫 SPAM                       95.2%    │     │
+│  │ Pesan terdeteksi sebagai spam          │     │
+│  └────────────────────────────────────────┘     │
+│                                                  │
+│  [Gauge Chart - Spam Probability]               │
+│  [Bar Chart - Spam vs Ham %]                    │
+│                                                  │
+│  Pesan Terproses:                               │
+│  "selamat memenangkan hadiah rupiah..."         │
+└──────────────────────────────────────────────────┘
+
+┌─ BATCH SECTION ──────────────────────────────────┐
+│  📋 Cek Banyak Pesan Sekaligus                   │
+│                                                  │
+│  ┌──────────────────────────────────────────┐   │
+│  │ Pesan pertama...                         │   │
+│  │ Pesan kedua...                           │   │
+│  │ Pesan ketiga...                          │   │
+│  └──────────────────────────────────────────┘   │
+│  [Analisis Semua Pesan]                         │
+│                                                  │
+│  (Results table dengan no, prediksi, keyakinan) │
+└──────────────────────────────────────────────────┘
+
+┌─ FOOTER ─────────────────────────────────────────┐
+│ SpamShield · Streamlit & Scikit-learn            │
+└──────────────────────────────────────────────────┘
+
+[SIDEBAR]
+────────────────────────
+🤖 TENTANG MODEL
+Algorithm: Linear SVM
+Accuracy: 95.68%
+...
+
+📚 CARA KERJA
+1. Input text
+2. Preprocess
+3. TF-IDF
+4. Predict
+...
+
+📖 DOKUMENTASI
+[Link ke repo]
+────────────────────────
+```
+
+### Key Features Explained
+
+#### Feature 1: Single Message Prediction
+
+**Workflow**:
+
+```
+User input text
+   ↓
+Click "Cek Pesan"
+   ↓
+Preprocess text
+   ↓
+Load model (cached)
+   ↓
+Predict & get probability
+   ↓
+Display result dengan:
+   - Predicted label (SPAM/HAM)
+   - Confidence percentage
+   - Gauge chart
+   - Bar chart
+   - Processed text
+```
+
+**Example**:
+
+```
+INPUT: "Selamat Anda memenangkan hadiah 1 juta!"
+
+PROCESSING:
+- Clean: "selamat anda memenangkan hadiah juta"
+- Remove stopwords: "selamat memenangkan hadiah" (removed: anda)
+
+PREDICTION:
+- Label: SPAM
+- Confidence: 95.2%
+- Probabilities: {spam: 95.2%, ham: 4.8%}
+
+VISUALIZATION:
+- Gauge shows 95.2% pointing to red zone
+- Bar chart shows spam 95.2%, ham 4.8%
+```
+
+#### Feature 2: Batch Prediction
+
+**Workflow**:
+
+```
+User inputs multiple messages (one per line)
+   ↓
+Click "Analisis Semua Pesan"
+   ↓
+For each message:
+   - Preprocess
+   - Predict
+   - Extract results
+   ↓
+Display results in table format:
+   No | Emoji | Label | Confidence | Message
+   ---|-------|-------|------------|--------
+   1  |  🚫   | SPAM  | 95.2%      | Pesan...
+   2  |  ✅   | HAM   | 98.3%      | Pesan...
+   3  |  🚫   | SPAM  | 92.1%      | Pesan...
+```
+
+**Benefits**:
+
+- Fast bulk analysis
+- CSV export possible (future feature)
+- Good untuk testing multiple messages
+- Shows distribution dalam table format
+
+#### Feature 3: Example Buttons
+
+**Implementasi**:
+
+```python
+ex_spam = st.button("📌 Contoh: Spam", key="ex_spam", use_container_width=False)
+ex_ham = st.button("📌 Contoh: Ham", key="ex_ham", use_container_width=False)
+
+if ex_spam:
+    st.session_state["input_text"] = "Selamat! Anda memenangkan hadiah 1 juta. Klik di sini."
+    st.rerun()  # Rerun app dengan text yang sudah diisi
+```
+
+**Keuntungan**:
+
+- Quick testing tanpa typing
+- Demonstrate spam vs ham
+- Educational untuk new users
+- Session state maintains input
+
+#### Feature 4: Session State Management
+
+```python
+if "input_text" not in st.session_state:
+    st.session_state["input_text"] = ""
+
+user_text = st.text_area(
+    value=st.session_state["input_text"],
+    ...
+)
+```
+
+**Fungsi**:
+
+- Persist input across reruns
+- Allow example buttons to populate input
+- Maintain user experience
+
+### Dependencies
+
+```
+streamlit==1.28.0+
+joblib==1.3.0+
+numpy==1.24.0+
+pandas==1.5.0+
+scikit-learn==1.3.0+
+nltk==3.8.0+
+plotly==5.13.0+
+```
+
+**Instalasi**:
+
+```bash
+pip install streamlit joblib plotly nltk scikit-learn pandas numpy
+```
+
+### Cara Menjalankan App
+
+#### Method 1: Streamlit CLI (Development)
+
+```bash
+cd /path/to/spam-ham-classifier
+streamlit run app.py
+```
+
+**Output**:
+
+```
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.x.x:8501
+```
+
+- Buka browser → http://localhost:8501
+- App akan auto-reload saat code berubah
+- Stop dengan Ctrl+C
+
+**Options**:
+
+```bash
+# Run dengan port custom
+streamlit run app.py --server.port 8080
+
+# Run dengan specific address
+streamlit run app.py --server.address 0.0.0.0
+
+# Disable file watcher (untuk shared servers)
+streamlit run app.py --logger.level=warning
+```
+
+#### Method 2: Docker (Production)
+
+```dockerfile
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+```
+
+**Build & Run**:
+
+```bash
+docker build -t spam-classifier .
+docker run -p 8501:8501 spam-classifier
+```
+
+#### Method 3: Streamlit Cloud (Free Hosting)
+
+1. Push code ke GitHub
+2. Kunjungi https://streamlit.io/cloud
+3. Connect GitHub repo
+4. Select branch & app file
+5. Deploy!
+
+**Free Tier**: Up to 3 apps, auto-scaling
+
+### Performance Optimization
+
+**Current Optimizations**:
+
+1. **Model Caching** (`@st.cache_resource`): Load model once
+2. **NLTK Resources Caching**: Download stopwords once
+3. **Efficient Preprocessing**: Vectorized operations
+4. **Plotly Charts**: Interactive charts (cached automatically)
+
+**Potential Further Optimizations**:
+
+- Add batch processing cache
+- Implement result caching
+- Use Redis untuk multi-user scenario
+- Implement model quantization untuk faster prediction
+
+### Error Handling
+
+**Scenario 1: Model File Not Found**
+
+```python
+model = load_model(model_path)
+
+if model is None:
+    st.error("❌ Model tidak ditemukan!")
+    st.info("Jalankan notebook 02_training.ipynb terlebih dahulu")
+    st.stop()
+```
+
+**Scenario 2: Empty Input**
+
+```python
+if check_clicked and not user_text.strip():
+    st.error("⚠️ Pesan tidak boleh kosong!")
+```
+
+**Scenario 3: Batch with Empty Lines**
+
+```python
+messages = [m.strip() for m in batch_text.split('\n') if m.strip()]
+```
+
+### Best Practices Used
+
+✅ **Code Organization**:
+
+- Imports grouped logically
+- Helper functions defined early
+- Main logic at bottom
+- Clear comments & sections
+
+✅ **UX Design**:
+
+- Clear visual hierarchy
+- Color-coded results
+- Helpful error messages
+- Example buttons untuk guidance
+- Mobile responsive
+
+✅ **Performance**:
+
+- Caching dengan @st.cache
+- Efficient data structures
+- Minimal recomputation
+- Fast model predictions
+
+✅ **Security**:
+
+- Input validation (empty check)
+- No hardcoded secrets
+- Safe text handling
+- NLTK resource validation
+
+### Troubleshooting
+
+**Problem**: App terasa lambat
+**Solution**: Model sudah di-cache. Reload browser atau clear cache.
+
+**Problem**: Text area value tidak di-update setelah klik button
+**Solution**: Pastikan menggunakan `st.session_state` dengan `st.rerun()`
+
+**Problem**: Styling tidak terlihat
+**Solution**: Hard refresh browser (Ctrl+Shift+R), atau clear browser cache
+
+**Problem**: Model tidak ditemukan
+**Solution**: Pastikan file `models/spam_ham_model.pkl` ada. Run notebook 02_training.ipynb dulu.
 
 ---
 

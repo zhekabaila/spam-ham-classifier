@@ -87,7 +87,166 @@ Jalankan notebooks dalam urutan ini:
    - Test prediksi single/batch messages
    - Interactive input untuk testing
 
-### 5. Contoh Penggunaan via Python
+### 5. Jalankan Streamlit Web App
+
+Setelah model berhasil dilatih di notebook 02, Anda dapat menggunakan web interface interaktif dengan Streamlit.
+
+#### Apa itu Streamlit?
+
+Streamlit adalah framework Python yang memudahkan pembuatan web applications untuk machine learning tanpa perlu HTML/CSS/JavaScript. Cocok untuk:
+
+- 🎨 Interactive visualizations
+- 📊 Real-time predictions
+- 🚀 Rapid prototyping
+- 📱 Mobile responsive
+
+#### Menjalankan Streamlit App
+
+```bash
+# Pastikan virtual environment sudah aktif
+source venv/bin/activate  # macOS/Linux
+# venv\Scripts\activate   # Windows
+
+# Jalankan aplikasi Streamlit
+streamlit run app.py
+```
+
+Aplikasi akan berjalan di: **http://localhost:8501**
+
+Browser akan otomatis terbuka. Jika tidak, buka manual URL di atas.
+
+**Untuk stop app**: Tekan `Ctrl+C` di terminal
+
+#### Fitur Streamlit App
+
+✅ **Single Message Prediction**
+
+- Input satu pesan
+- Visualisasi real-time dengan gauge chart
+- Probability breakdown dengan bar chart
+- Display pesan setelah preprocessing
+
+✅ **Batch Prediction**
+
+- Analisis multiple pesan sekaligus
+- Hasil dalam format table
+- Quick statistics
+
+✅ **Example Buttons**
+
+- Contoh pesan spam & ham
+- Quick testing tanpa mengetik
+
+✅ **Beautiful Dark Theme UI**
+
+- Modern design dengan custom CSS
+- Responsive pada mobile
+- Easy to read visualizations
+
+#### Cara Menggunakan App
+
+**Step 1**: Masukkan pesan di textarea
+
+```
+Contoh: "Selamat Anda memenangkan hadiah 1 juta rupiah!"
+```
+
+**Step 2**: Klik tombol "Cek Pesan"
+
+**Step 3**: Lihat hasil prediksi:
+
+- 🚫 SPAM atau ✅ HAM
+- Confidence percentage (0-100%)
+- Gauge chart menunjukkan spam probability
+- Bar chart breakdown
+- Pesan yang sudah diproses
+
+**Step 4 (Optional)**: Untuk batch prediction:
+
+- Scroll ke section "Cek Banyak Pesan Sekaligus"
+- Masukkan multiple pesan (satu per baris)
+- Klik "Analisis Semua Pesan"
+- Lihat hasil dalam table
+
+#### Running Options
+
+**Option 1: Development Mode** (untuk editing code)
+
+```bash
+streamlit run app.py
+# Auto-reload saat file berubah
+```
+
+**Option 2: Custom Port**
+
+```bash
+streamlit run app.py --server.port 8080
+```
+
+**Option 3: Docker** (untuk deployment)
+
+```bash
+docker build -t spam-classifier .
+docker run -p 8501:8501 spam-classifier
+```
+
+**Option 4: Streamlit Cloud** (free hosting)
+
+1. Push code ke GitHub
+2. Kunjungi https://streamlit.io/cloud
+3. Connect repository Anda
+4. Deploy dalam 1 klik!
+
+#### Requirements untuk Streamlit
+
+Pastikan dependensi berikut sudah terinstall (seharusnya sudah ada di `requirements.txt`):
+
+```
+streamlit>=1.28.0
+plotly>=5.13.0
+scikit-learn>=1.3.0
+nltk>=3.8.0
+joblib>=1.3.0
+pandas>=1.5.0
+numpy>=1.24.0
+```
+
+#### Troubleshooting Streamlit
+
+**Problem**: App tidak terbuka di browser
+
+- **Solusi**: Buka manual http://localhost:8501
+
+**Problem**: Model tidak ditemukan
+
+- **Solusi**: Pastikan sudah menjalankan `02_training.ipynb` terlebih dahulu. Model harus ada di `models/spam_ham_model.pkl`
+
+**Problem**: NLTK stopwords error
+
+- **Solusi**: Cell pertama dari `01_eda.ipynb` sudah download NLTK resources. Jika masih error, manual run:
+
+```python
+import nltk
+nltk.download('stopwords')
+```
+
+**Problem**: Styling tidak terlihat dengan benar
+
+- **Solusi**: Hard refresh browser (Ctrl+Shift+R) atau clear cache browser
+
+#### Tips & Tricks
+
+🎯 **Quick Testing**: Gunakan example buttons untuk test spam vs ham dengan cepat
+
+📊 **Batch Analysis**: Bagus untuk testing multiple messages dari Excel/CSV
+
+💾 **Model Caching**: App auto-cache model setelah load pertama (very fast untuk prediksi berikutnya)
+
+📱 **Mobile**: App responsive, bisa dibuka dari smartphone
+
+🌐 **Share**: Jika deploy ke Streamlit Cloud, bisa share URL ke teman/kolega
+
+### 6. Contoh Penggunaan via Python
 
 Setelah model berhasil dilatih, gunakan sebagai berikut:
 
